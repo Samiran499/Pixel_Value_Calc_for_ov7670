@@ -68,7 +68,7 @@ inline void waitForPreviousUartByteToBeSent();
 inline bool isUartReady();
 
 // uint16_t frame_intensity = 0;
-uint16_t column_intensitiy[8] = {0};
+uint16_t column_intensitiy[5] = {0};
 uint16_t pixelX = 0;
 // uint16_t pixelY = 0;
 
@@ -124,6 +124,11 @@ void processGrayscaleFrameBuffered()
 {
     // frame_intensity = 0;
     uint16_t pixelX = 0;
+    column_intensitiy[0] = 0;
+    column_intensitiy[1] = 0;
+    column_intensitiy[2] = 0;
+    column_intensitiy[3] = 0;
+    column_intensitiy[4] = 0;
     // uint16_t pixelY = 0;
     camera.waitForVsync();
     commandDebugPrint("Vsync");
@@ -153,8 +158,8 @@ void processGrayscaleFrameBuffered()
             //     }
             // }
             
-            if(y <= lineCount/2) {
-                column_intensitiy[pixelX/20] += lineBuffer[x];
+            if(y > (lineCount/2) - 10 && y <= lineCount/2) {
+                column_intensitiy[pixelX/32] += lineBuffer[x];
             }
             x++;
 
@@ -186,7 +191,7 @@ void processGrayscaleFrameBuffered()
             processNextGrayscalePixelByteInBuffer();
         }
 
-        if(y > lineCount/2 && startp < 8) {
+        if(y > lineCount/2 && startp < 5) {
             commandDebugPrint(String(column_intensitiy[startp++]));
         }
     };
