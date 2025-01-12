@@ -67,6 +67,11 @@ inline uint8_t formatPixelByteGrayscaleSecond(uint8_t byte);
 inline void waitForPreviousUartByteToBeSent();
 inline bool isUartReady();
 
+// uint16_t frame_intensity = 0;
+uint16_t column_intensitiy[8] = {0};
+uint16_t pixelX = 0;
+// uint16_t pixelY = 0;
+
 
 // this is called in Arduino setup() function
 void initializeScreenAndCamera()
@@ -75,7 +80,6 @@ void initializeScreenAndCamera()
     // For UART communiation we want to set WAVGAT Nano to 16Mhz to match Atmel based Arduino
     // CLKPR = 0x80; // enter clock rate change mode
     // CLKPR = 1; // set prescaler to 1. WAVGAT MCU has it 3 by default.
-
     Serial.begin(baud);
     if (camera.init()) { commandDebugPrint("Camera initialized."); }
     else { commandDebugPrint("Camera initialization failed."); }
@@ -118,25 +122,40 @@ void processFrame()
 
 void processGrayscaleFrameBuffered()
 {
+    // frame_intensity = 0;
+    uint16_t pixelX = 0;
+    // uint16_t pixelY = 0;
     camera.waitForVsync();
     commandDebugPrint("Vsync");
 
     camera.ignoreVerticalPadding();
+    uint16_t startp = 0;
 
     for (uint16_t y = 0; y < lineCount; y++)
     {
+        // pixelY = y;
         lineBufferSendByte = &lineBuffer[0];
         camera.ignoreHorizontalPaddingLeft();
 
         uint16_t x = 0;
         while (x < lineBufferLength)
         {
+            pixelX = x;
             camera.waitForPixelClockRisingEdge(); // YUV422 grayscale byte
             camera.readPixelByte(lineBuffer[x]);
             lineBuffer[x] = formatPixelByteGrayscaleFirst(lineBuffer[x]);
 
             camera.waitForPixelClockRisingEdge(); // YUV422 color byte. Ignore.
             if (isSendWhileBuffering) { processNextGrayscalePixelByteInBuffer(); }
+            // if(y >= (lineCount/2) - 3 && y <= (lineCount/2) + 4){
+            //     if(x >= (lineBufferLength/2) - 3 && x <= (lineBufferLength/2) + 4){
+            //         frame_intensity += lineBuffer[x];
+            //     }
+            // }
+            
+            if(y <= lineCount/2) {
+                column_intensitiy[pixelX/20] += lineBuffer[x];
+            }
             x++;
 
             camera.waitForPixelClockRisingEdge(); // YUV422 grayscale byte
@@ -145,7 +164,16 @@ void processGrayscaleFrameBuffered()
 
             camera.waitForPixelClockRisingEdge(); // YUV422 color byte. Ignore.
             if (isSendWhileBuffering) { processNextGrayscalePixelByteInBuffer(); }
+            // if(y >= (lineCount/2) - 3 && y <= (lineCount/2) + 4){
+            //     if(x >= (lineBufferLength/2) - 3 && x <= (lineBufferLength/2) + 4){
+            //         frame_intensity += lineBuffer[x];
+            //     }
+            // }
+
             x++;
+            // if(pixelX%10 == 0 && pixelY%10 == 0) {
+            //     commandDebugPrint(String(box_intensitiy[(pixelY/10)*16 + (pixelX/10)]));
+            // }
         }
         camera.ignoreHorizontalPaddingRight();
 
@@ -157,7 +185,15 @@ void processGrayscaleFrameBuffered()
         {
             processNextGrayscalePixelByteInBuffer();
         }
+
+        if(y > lineCount/2 && startp < 8) {
+            commandDebugPrint(String(column_intensitiy[startp++]));
+        }
     };
+    // commandDebugPrint(String(frame_intensity));
+    // for(int i = 0; i < 8; i++) {
+    //     commandDebugPrint(String(column_intensitiy[i]));
+    // }
 }
 
 void processNextGrayscalePixelByteInBuffer()
