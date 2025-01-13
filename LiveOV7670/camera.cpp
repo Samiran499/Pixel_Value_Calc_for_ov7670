@@ -192,7 +192,7 @@ void processGrayscaleFrameBuffered()
         }
 
         if(y > lineCount/2 && startp < 5) {
-            commandDebugPrint(String(column_intensitiy[startp++]));
+            commandDebugPrint(String(column_intensitiy[startp++]/20));
         }
     };
     // commandDebugPrint(String(frame_intensity));
