@@ -6,5 +6,5 @@
 #define IN3 11
 #define IN4 13
 
-void declarePins(){}
-void drive(uint16_t& column_intensities){}
+void declarePins();
+void drive(uint16_t& mode);

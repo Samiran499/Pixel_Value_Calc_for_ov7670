@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "CameraOV7670.h"
 #include "camera.h"
+#include "drive.h"
 
 
 const uint8_t VERSION            = 0x10;
@@ -71,7 +72,10 @@ inline bool isUartReady();
 uint16_t column_intensitiy[5] = {0};
 uint16_t pixelX = 0;
 // uint16_t pixelY = 0;
-
+uint16_t max = 0;
+uint16_t mode = 0;
+bool unexpected = false;
+uint16_t reverse = 0;
 
 // this is called in Arduino setup() function
 void initializeScreenAndCamera()
@@ -83,6 +87,7 @@ void initializeScreenAndCamera()
     Serial.begin(baud);
     if (camera.init()) { commandDebugPrint("Camera initialized."); }
     else { commandDebugPrint("Camera initialization failed."); }
+    declarePins();
 }
 
 
@@ -134,7 +139,10 @@ void processGrayscaleFrameBuffered()
     commandDebugPrint("Vsync");
 
     camera.ignoreVerticalPadding();
-    uint16_t startp = 0;
+    uint16_t startp1 = 0;
+    uint16_t startp2 = 1;
+    max = 0;
+    mode = 0;
 
     for (uint16_t y = 0; y < lineCount; y++)
     {
@@ -159,7 +167,10 @@ void processGrayscaleFrameBuffered()
             // }
             
             if(y > (lineCount/2) - 10 && y <= lineCount/2) {
-                column_intensitiy[pixelX/32] += lineBuffer[x];
+                column_intensitiy[pixelX/32] += lineBuffer[x]; // Accumulate the intensity
+                // Don't ask any GenAI for this, they'll mess up
+                // Also here's a high possibilty of losing some of the pixel values
+                // So, keep that in mind
             }
             x++;
 
@@ -171,7 +182,7 @@ void processGrayscaleFrameBuffered()
             if (isSendWhileBuffering) { processNextGrayscalePixelByteInBuffer(); }
             // if(y >= (lineCount/2) - 3 && y <= (lineCount/2) + 4){
             //     if(x >= (lineBufferLength/2) - 3 && x <= (lineBufferLength/2) + 4){
-            //         frame_intensity += lineBuffer[x];
+            //         frame_intensity += lineBuffer[x]; //  More computationally intense
             //     }
             // }
 
@@ -191,9 +202,26 @@ void processGrayscaleFrameBuffered()
             processNextGrayscalePixelByteInBuffer();
         }
 
-        if(y > lineCount/2 && startp < 5) {
-            commandDebugPrint(String(column_intensitiy[startp++]/20));
+        if(y > lineCount/2 && startp1 < 5) {
+            column_intensitiy[startp1] = column_intensitiy[startp1]/200;
+            commandDebugPrint(String(column_intensitiy[startp1++]));
         }
+
+        if(y > lineCount/2 + 5 && startp2 < 5) {
+            max = (column_intensitiy[startp2] > max) ? startp2 : max;
+            if(max == column_intensitiy[startp2]) unexpected = true;
+            startp2++; 
+        }
+
+        if(y > lineCount/2 + 6) {
+            if(!unexpected) {
+                drive(max);
+            } else {
+                drive(reverse);
+            }
+        }
+
+
     };
     // commandDebugPrint(String(frame_intensity));
     // for(int i = 0; i < 8; i++) {
