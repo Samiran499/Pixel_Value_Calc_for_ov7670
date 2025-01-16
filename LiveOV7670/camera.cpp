@@ -208,19 +208,25 @@ void processGrayscaleFrameBuffered()
         }
 
         if(y > lineCount/2 + 5 && startp2 < 5) {
-            max = (column_intensitiy[startp2] > max) ? startp2 : max;
             if(max == column_intensitiy[startp2]) unexpected = true;
+            if(column_intensitiy[startp2] > max) {
+                max = column_intensitiy[startp2];
+                mode++;
+            }
             startp2++; 
         }
+        if(y > lineCount/2 + 10 && y < lineCount/2 + 13) {
+            commandDebugPrint(String(mode));
+            commandDebugPrint(String(unexpected));
+        }
 
-        if(y > lineCount/2 + 6) {
-            if(!unexpected) {
+        if(y > lineCount/2 + 13) {
+            if(unexpected) {
                 drive(max);
             } else {
                 drive(reverse);
             }
         }
-
 
     };
     // commandDebugPrint(String(frame_intensity));

@@ -10,9 +10,9 @@ void declarePins() {
 void drive(uint16_t& mode){
     if(mode = 0) { // If something unexoected happens, run in reverse
         digitalWrite(IN1, LOW);
-        digitalWrite(IN2, HIGH);
+        digitalWrite(IN2, LOW);
         digitalWrite(IN3, LOW);
-        digitalWrite(IN4, HIGH);
+        digitalWrite(IN4, LOW);
     }
     if(mode = 1) { // If the brightest pixel is on the leftmost portion
         digitalWrite(IN1, HIGH);
