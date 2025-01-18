@@ -129,6 +129,7 @@ void processGrayscaleFrameBuffered()
 {
     // frame_intensity = 0;
     uint16_t pixelX = 0;
+    unexpected = false;
     column_intensitiy[0] = 0;
     column_intensitiy[1] = 0;
     column_intensitiy[2] = 0;
@@ -136,11 +137,11 @@ void processGrayscaleFrameBuffered()
     column_intensitiy[4] = 0;
     // uint16_t pixelY = 0;
     camera.waitForVsync();
-    commandDebugPrint("Vsync");
+    // commandDebugPrint("Vsync");
 
     camera.ignoreVerticalPadding();
     uint16_t startp1 = 0;
-    uint16_t startp2 = 1;
+    uint16_t startp2 = 0;
     max = 0;
     mode = 0;
 
@@ -221,10 +222,12 @@ void processGrayscaleFrameBuffered()
         }
 
         if(y > lineCount/2 + 13) {
-            if(unexpected) {
+            if(!unexpected) {
                 drive(max);
+                delay(300);
             } else {
                 drive(reverse);
+                delay(300);
             }
         }
 
