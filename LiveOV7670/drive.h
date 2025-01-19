@@ -7,4 +7,4 @@
 #define IN4 13
 
 void declarePins();
-void drive(uint16_t& mode);
+void drive(float& mode);

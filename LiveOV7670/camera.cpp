@@ -72,10 +72,10 @@ inline bool isUartReady();
 uint16_t column_intensitiy[5] = {0};
 uint16_t pixelX = 0;
 // uint16_t pixelY = 0;
-uint16_t max = 0;
-uint16_t mode = 0;
+float max = 0;
+float mode = 0;
 bool unexpected = false;
-uint16_t reverse = 0;
+float reverse = 0;
 
 // this is called in Arduino setup() function
 void initializeScreenAndCamera()
@@ -137,15 +137,13 @@ void processGrayscaleFrameBuffered()
     column_intensitiy[4] = 0;
     // uint16_t pixelY = 0;
     camera.waitForVsync();
-    // commandDebugPrint("Vsync");
+    commandDebugPrint("Vsync");
 
     camera.ignoreVerticalPadding();
-    uint16_t startp1 = 0;
-    uint16_t startp2 = 0;
     max = 0;
     mode = 0;
 
-    for (uint16_t y = 0; y < lineCount; y++)
+    for (uint16_t y = 0; y < lineCount/2; y++)
     {
         // pixelY = y;
         lineBufferSendByte = &lineBuffer[0];
@@ -167,7 +165,7 @@ void processGrayscaleFrameBuffered()
             //     }
             // }
             
-            if(y > (lineCount/2) - 10 && y <= lineCount/2) {
+            if(y%4 == 0 && y <= lineCount/2) {
                 column_intensitiy[pixelX/32] += lineBuffer[x]; // Accumulate the intensity
                 // Don't ask any GenAI for this, they'll mess up
                 // Also here's a high possibilty of losing some of the pixel values
@@ -187,6 +185,13 @@ void processGrayscaleFrameBuffered()
             //     }
             // }
 
+            if(y%4 == 0 && y <= lineCount/2) {
+                column_intensitiy[pixelX/32] += lineBuffer[x]; // Accumulate the intensity
+                // Don't ask any GenAI for this, they'll mess up
+                // Also here's a high possibilty of losing some of the pixel values
+                // So, keep that in mind
+            }
+
             x++;
             // if(pixelX%10 == 0 && pixelY%10 == 0) {
             //     commandDebugPrint(String(box_intensitiy[(pixelY/10)*16 + (pixelX/10)]));
@@ -203,35 +208,37 @@ void processGrayscaleFrameBuffered()
             processNextGrayscalePixelByteInBuffer();
         }
 
-        if(y > lineCount/2 && startp1 < 5) {
-            column_intensitiy[startp1] = column_intensitiy[startp1]/200;
-            commandDebugPrint(String(column_intensitiy[startp1++]));
-        }
-
-        if(y > lineCount/2 + 5 && startp2 < 5) {
-            if(max == column_intensitiy[startp2]) unexpected = true;
-            if(column_intensitiy[startp2] > max) {
-                max = column_intensitiy[startp2];
-                mode++;
-            }
-            startp2++; 
-        }
-        if(y > lineCount/2 + 10 && y < lineCount/2 + 13) {
-            commandDebugPrint(String(mode));
-            commandDebugPrint(String(unexpected));
-        }
-
-        if(y > lineCount/2 + 13) {
-            if(!unexpected) {
-                drive(max);
-                delay(300);
-            } else {
-                drive(reverse);
-                delay(300);
-            }
-        }
-
     };
+
+    for(uint16_t i = 0; i < 5; i++) {
+        column_intensitiy[i] = column_intensitiy[i]/600;
+        commandDebugPrint(String(column_intensitiy[i]));
+        max += (i + 1)*column_intensitiy[i];
+        mode += column_intensitiy[i];
+    }
+
+    mode =  max/mode;
+
+    if(mode > int(mode) + 0.5) {
+        mode = int(mode) + 1;
+    } else {
+        mode = int(mode);
+    }
+
+    for(uint16_t j = 0; j < 4; j++) {
+        if(column_intensitiy[j] == column_intensitiy[j + 1]) unexpected = true; 
+    }
+
+    commandDebugPrint(String(mode));
+    commandDebugPrint(String(unexpected));
+
+    drive(mode);
+    
+    // if(!unexpected) {
+    //     drive(mode);
+    // } else {
+    //     drive(reverse);
+    // }
     // commandDebugPrint(String(frame_intensity));
     // for(int i = 0; i < 8; i++) {
     //     commandDebugPrint(String(column_intensitiy[i]));
